@@ -13,7 +13,7 @@ export default function LocalBuilderPage() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-white text-slate-900 font-sans selection:bg-indigo-100 relative">
+    <main className="min-h-screen bg-white text-slate-900 font-sans selection:bg-indigo-100 relative overflow-x-hidden">
       {/* Hiệu ứng nền Modern AI - Tăng độ mờ để tập trung vào nội dung */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 pointer-events-none">
         <div className="absolute top-[-5%] right-[-5%] w-[45%] h-[45%] bg-indigo-50/60 rounded-full blur-[130px]" />
@@ -73,8 +73,9 @@ export default function LocalBuilderPage() {
           {/* Container chính: 
             - QUAN TRỌNG: Bỏ overflow-hidden để dropdown không bị cắt.
             - border-2 border-slate-300: Viền dày hơn và đậm hơn để rõ ràng.
+            - overflow-x-hidden: Tránh tràn ngang
           */}
-          <div className="relative bg-white rounded-[32px] border-2 border-slate-300 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] min-h-[650px]">
+          <div className="relative bg-white rounded-[32px] border-2 border-slate-300 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] min-h-[650px] overflow-x-hidden">
             <Suspense fallback={<LoadingFallback />}>
               <div className="w-full h-full rounded-[31px]">
                 <LocalItineraryBuilder />

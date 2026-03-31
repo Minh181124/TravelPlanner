@@ -307,7 +307,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-    <div className="flex flex-col md:grid md:grid-cols-3 gap-6 h-full overflow-hidden p-6">
+    <div className="flex flex-col md:grid md:grid-cols-3 gap-6 h-full overflow-hidden p-6 overflow-x-hidden">
       {/* FORM - Left Side */}
       <div className="md:col-span-1 space-y-6 overflow-y-auto border-r border-slate-200 pr-6">
         <div>
