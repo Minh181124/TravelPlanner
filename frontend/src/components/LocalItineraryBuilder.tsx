@@ -11,6 +11,16 @@ import { placesService } from '@/services/placesService';
 import { useRoutePreview } from '@/hooks/useRoutePreview';
 import type { LocalPlaceItem, SoThich, CreateLocalItineraryDto, UpdateLocalItineraryDto } from '@/types/local';
 
+// Mock data cho sở thích - đồng bộ với trang local/page.tsx
+const MOCK_SOTHICH_LIST: SoThich[] = [
+  { sothich_id: 1, ten: 'Văn hóa' },
+  { sothich_id: 2, ten: 'Ẩm thực' },
+  { sothich_id: 3, ten: 'Nghỉ dưỡng' },
+  { sothich_id: 4, ten: 'Mua sắm' },
+  { sothich_id: 5, ten: 'Khám phá' },
+  { sothich_id: 6, ten: 'Check-in' }
+];
+
 export interface LocalItineraryBuilderProps {
   editId?: number;
 }
@@ -50,9 +60,8 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load danh sách sở thích
-        const soThichData = await localItineraryService.getSoThichList();
-        setSoThichList(soThichData);
+        // Dùng mock data sở thích thay vì gọi API
+        setSoThichList(MOCK_SOTHICH_LIST);
 
         // Nếu đang edit, load dữ liệu lịch trình hiện có
         if (isEditMode && editId) {
