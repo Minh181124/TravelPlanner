@@ -1,0 +1,207 @@
+# Database Schema Reference
+
+## 1. Prisma Schema (Source of Truth)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model chitiet_diadiem {
+  chitiet_diadiem_id Int       @id @default(autoincrement())
+  diadiem_id         Int?
+  mota_google        String?
+  mota_tonghop       String?
+  sodienthoai        String?   @db.VarChar(20)
+  website            String?
+  giomocua           Json?
+  ngaycapnhat        DateTime? @default(now()) @db.Timestamp(6)
+  diadiem            diadiem?  @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model danhgia_diadiem {
+  danhgia_diadiem_id Int        @id @default(autoincrement())
+  nguoidung_id       Int?
+  diadiem_id         Int?
+  sosao              Int?
+  noidung            String?
+  ngaytao            DateTime?  @default(now()) @db.Timestamp(6)
+  diadiem            diadiem?   @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+  nguoidung          nguoidung? @relation(fields: [nguoidung_id], references: [nguoidung_id], onUpdate: NoAction)
+}
+
+model diadiem {
+  diadiem_id                  Int                           @id @default(autoincrement())
+  google_place_id             String                        @unique @db.VarChar(255)
+  ten                         String                        @db.VarChar(255)
+  diachi                      String?
+  lat                         Float?
+  lng                         Float?
+  geom                        Unsupported("geography")?
+  loai                        String?                       @db.VarChar(100)
+  danhgia                     Decimal?                      @db.Decimal(3, 2)
+  soluotdanhgia               Int?
+  giatien                     Int?
+  ngaycapnhat                 DateTime?                     @default(now()) @db.Timestamp(6)
+  chitiet_diadiem             chitiet_diadiem[]
+  danhgia_diadiem             danhgia_diadiem[]
+  hinhanh_diadiem             hinhanh_diadiem[]
+  lichtrinh_local_diadiem     lichtrinh_local_diadiem[]
+  lichtrinh_nguoidung_diadiem lichtrinh_nguoidung_diadiem[]
+  luu_diadiem                 luu_diadiem[]
+  meovat_diadiem              meovat_diadiem[]
+}
+
+model hinhanh_diadiem {
+  hinhanh_diadiem_id Int      @id @default(autoincrement())
+  diadiem_id         Int?
+  photo_reference    String?
+  url                String?
+  diadiem            diadiem? @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model lichtrinh_local {
+  lichtrinh_local_id      Int                       @id @default(autoincrement())
+  nguoidung_id            Int?
+  tieude                  String                    @db.VarChar(255)
+  mota                    String?
+  sothich_id              Int?
+  thoigian_dukien         String?                   @db.VarChar(100)
+  luotthich               Int?                      @default(0)
+  ngaytao                 DateTime?                 @default(now()) @db.Timestamp(6)
+  nguoidung               nguoidung?                @relation(fields: [nguoidung_id], references: [nguoidung_id], onUpdate: NoAction)
+  sothich                 sothich?                  @relation(fields: [sothich_id], references: [sothich_id], onDelete: NoAction, onUpdate: NoAction)
+  lichtrinh_local_diadiem lichtrinh_local_diadiem[]
+}
+
+model lichtrinh_local_diadiem {
+  lichtrinh_local_diadiem_id Int              @id @default(autoincrement())
+  lichtrinh_local_id         Int?
+  diadiem_id                 Int?
+  thutu                      Int?
+  thoigian_den               DateTime?        @db.Time(6)
+  thoiluong                  Int?
+  ghichu                     String?
+  diadiem                    diadiem?         @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+  lichtrinh_local            lichtrinh_local? @relation(fields: [lichtrinh_local_id], references: [lichtrinh_local_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model lichtrinh_nguoidung {
+  lichtrinh_nguoidung_id      Int                           @id @default(autoincrement())
+  nguoidung_id                Int?
+  tieude                      String                        @db.VarChar(255)
+  thoigian_batdau             DateTime?                     @db.Date
+  thoigian_ketthuc            DateTime?                     @db.Date
+  trangthai                   String?                       @default("planning") @db.VarChar(50)
+  ngaytao                     DateTime?                     @default(now()) @db.Timestamp(6)
+  nguoidung                   nguoidung?                    @relation(fields: [nguoidung_id], references: [nguoidung_id], onDelete: Cascade, onUpdate: NoAction)
+  lichtrinh_nguoidung_diadiem lichtrinh_nguoidung_diadiem[]
+  tuyen_duong                 tuyen_duong[]
+}
+
+model lichtrinh_nguoidung_diadiem {
+  lichtrinh_nguoidung_diadiem_id Int                  @id @default(autoincrement())
+  lichtrinh_nguoidung_id         Int?
+  diadiem_id                     Int?
+  thutu                          Int?
+  thoigian_den                   DateTime?            @db.Time(6)
+  thoiluong                      Int?
+  ghichu                         String?
+  diadiem                        diadiem?             @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+  lichtrinh_nguoidung            lichtrinh_nguoidung? @relation(fields: [lichtrinh_nguoidung_id], references: [lichtrinh_nguoidung_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model luu_diadiem {
+  luu_diadiem_id Int        @id @default(autoincrement())
+  nguoidung_id   Int?
+  diadiem_id     Int?
+  ngaytao        DateTime?  @default(now()) @db.Timestamp(6)
+  diadiem        diadiem?   @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+  nguoidung      nguoidung? @relation(fields: [nguoidung_id], references: [nguoidung_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model meovat_diadiem {
+  meovat_diadiem_id Int        @id @default(autoincrement())
+  diadiem_id        Int?
+  nguoidung_id      Int?
+  noidung           String
+  thoidiem_dep      String?
+  ngaytao           DateTime?  @default(now()) @db.Timestamp(6)
+  diadiem           diadiem?   @relation(fields: [diadiem_id], references: [diadiem_id], onDelete: Cascade, onUpdate: NoAction)
+  nguoidung         nguoidung? @relation(fields: [nguoidung_id], references: [nguoidung_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model nguoidung {
+  nguoidung_id        Int                   @id @default(autoincrement())
+  email               String                @unique @db.VarChar(255)
+  matkhau             String                @db.VarChar(255)
+  ten                 String?               @db.VarChar(100)
+  avatar              String?
+  trangthai           String?               @default("active") @db.VarChar(50)
+  ngaytao             DateTime?             @default(now()) @db.Timestamp(6)
+  ngaycapnhat         DateTime?             @default(now()) @db.Timestamp(6)
+  danhgia_diadiem     danhgia_diadiem[]
+  lichtrinh_local     lichtrinh_local[]
+  lichtrinh_nguoidung lichtrinh_nguoidung[]
+  luu_diadiem         luu_diadiem[]
+  meovat_diadiem      meovat_diadiem[]
+  nguoidung_sothich   nguoidung_sothich[]
+}
+
+model nguoidung_sothich {
+  nguoidung_sothich_id Int        @id @default(autoincrement())
+  nguoidung_id         Int?
+  sothich_id           Int?
+  nguoidung            nguoidung? @relation(fields: [nguoidung_id], references: [nguoidung_id], onDelete: Cascade, onUpdate: NoAction)
+  sothich              sothich?   @relation(fields: [sothich_id], references: [sothich_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model sothich {
+  sothich_id        Int                 @id @default(autoincrement())
+  ten               String              @db.VarChar(100)
+  mota              String?
+  lichtrinh_local   lichtrinh_local[]
+  nguoidung_sothich nguoidung_sothich[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model tuyen_duong {
+  tuyen_duong_id         Int                  @id @default(autoincrement())
+  lichtrinh_nguoidung_id Int?
+  polyline               String?
+  tong_khoangcach        Decimal?             @db.Decimal
+  tong_thoigian          Int?
+  ngay_thu_may           Int?                 @default(1)
+  ngaytao                DateTime?            @default(now()) @db.Timestamp(6)
+  lichtrinh_nguoidung    lichtrinh_nguoidung? @relation(fields: [lichtrinh_nguoidung_id], references: [lichtrinh_nguoidung_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+
+## 2. Implementation Rules for Anti Gravity (MUST FOLLOW)
+
+### A. Naming Convention
+- **Strict ID Usage**: Tuyệt đối không dùng `id`. Phải dùng chính xác tên cột trong schema: `diadiem_id`, `tuyen_duong_id`, `lichtrinh_local_id`, v.v.
+- **Snake_case**: Giữ nguyên định dạng snake_case của database khi định nghĩa Typescript Interface để khớp với dữ liệu trả về từ NestJS.
+
+### B. Data Mapping Rules
+- **Decimal to Number**: Các cột `Decimal` (danhgia, tong_khoangcach) trong database phải được định nghĩa là `number` ở Frontend.
+- **Null Safety**: Các trường có dấu `?` trong Prisma (ví dụ: `diachi?`, `lat?`) phải được định nghĩa là `optional` hoặc `| null` trong Typescript.
+
+### C. Relationship Handling
+- Khi thực hiện Fetch một Itinerary, AI phải nhớ gợi ý code sử dụng `.include` trong Prisma (Backend) để lấy kèm các bảng trung gian (`lichtrinh_local_diadiem`) và dữ liệu `diadiem`.
+- Khi hiển thị danh sách địa điểm của một Tour, AI phải dựa vào cột `thutu` để sắp xếp (sort) mảng trước khi render.
+
+### D. Safety Constraints
+- **No Hallucinations**: Không tự chế ra các bảng hoặc cột không có trong schema trên.
+- **Transaction Logic**: Khi thực hiện các lệnh lưu (POST), luôn ưu tiên gợi ý sử dụng `$transaction` nếu đụng đến nhiều bảng.
