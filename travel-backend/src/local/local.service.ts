@@ -69,27 +69,29 @@ export class LocalService {
 
       // Thực hiện toàn bộ transaction
       const result = await this.prisma.$transaction(async (tx) => {
-        // STEP 1: Upsert tất cả các địa điểm vào bảng diadiem
-        const upsertedPlaces: any[] = [];
-        for (const place of dto.places) {
-          const upsertedPlace = await tx.diadiem.upsert({
-            where: { google_place_id: place.mapboxPlaceId },
-            update: {
-              ten: place.ten,
-              lat: place.lat,
-              lng: place.lng,
-              ngaycapnhat: new Date(),
-            },
-            create: {
-              google_place_id: place.mapboxPlaceId,
-              ten: place.ten,
-              lat: place.lat,
-              lng: place.lng,
-              ngaycapnhat: new Date(),
-            },
-          });
-          upsertedPlaces.push(upsertedPlace);
-        }
+          // Upsert tất cả các địa điểm vào bảng diadiem
+          const upsertedPlaces: any[] = [];
+          for (const place of dto.places) {
+            const upsertedPlace = await tx.diadiem.upsert({
+              where: { google_place_id: place.mapboxPlaceId },
+              update: {
+                ten: place.ten,
+                diachi: place.diachi || null,
+                lat: place.lat,
+                lng: place.lng,
+                ngaycapnhat: new Date(),
+              },
+              create: {
+                google_place_id: place.mapboxPlaceId,
+                ten: place.ten,
+                diachi: place.diachi || null,
+                lat: place.lat,
+                lng: place.lng,
+                ngaycapnhat: new Date(),
+              },
+            });
+            upsertedPlaces.push(upsertedPlace);
+          }
 
         // STEP 2: Tạo bản ghi lichtrinh_local
         const lichtrinh = await tx.lichtrinh_local.create({
@@ -98,6 +100,7 @@ export class LocalService {
             tieude: dto.tieude,
             mota: dto.mota || null,
             sothich_id: dto.sothich_id || null,
+            phuongtien: dto.phuongtien || 'mapbox/driving-traffic',
             ngaytao: new Date(),
           },
         });
@@ -305,6 +308,7 @@ export class LocalService {
         if (dto.tieude !== undefined) updatedData.tieude = dto.tieude;
         if (dto.mota !== undefined) updatedData.mota = dto.mota;
         if (dto.sothich_id !== undefined) updatedData.sothich_id = dto.sothich_id || null;
+        if (dto.phuongtien !== undefined) updatedData.phuongtien = dto.phuongtien || 'mapbox/driving-traffic';
 
         // STEP 2: Nếu có places mới, re-sync lichtrinh_local_diadiem
         if (dto.places && dto.places.length > 0) {
@@ -320,6 +324,7 @@ export class LocalService {
               where: { google_place_id: place.mapboxPlaceId },
               update: {
                 ten: place.ten,
+                diachi: place.diachi || null,
                 lat: place.lat,
                 lng: place.lng,
                 ngaycapnhat: new Date(),
@@ -327,6 +332,7 @@ export class LocalService {
               create: {
                 google_place_id: place.mapboxPlaceId,
                 ten: place.ten,
+                diachi: place.diachi || null,
                 lat: place.lat,
                 lng: place.lng,
                 ngaycapnhat: new Date(),

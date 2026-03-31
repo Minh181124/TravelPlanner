@@ -23,6 +23,7 @@ export interface CreateLocalItineraryDto {
   tieude: string; // Tiêu đề lịch trình
   mota?: string | null; // Mô tả chi tiết
   sothich_id?: number | null; // ID sở thích (danh mục)
+  phuongtien?: string | null; // Phương tiện di chuyển chính (driving-traffic, driving, walking, cycling)
   places: LocalPlaceItem[]; // Danh sách địa điểm
 }
 
@@ -35,6 +36,7 @@ export interface UpdateLocalItineraryDto {
   tieude?: string; // Tiêu đề lịch trình
   mota?: string | null; // Mô tả chi tiết
   sothich_id?: number | null; // ID sở thích (danh mục)
+  phuongtien?: string | null; // Phương tiện di chuyển chính (driving-traffic, driving, walking, cycling)
   places?: LocalPlaceItem[]; // Danh sách địa điểm (thay thế toàn bộ)
 }
 
@@ -57,6 +59,7 @@ export interface LocalItinerary {
   tieude: string;
   mota: string | null;
   sothich_id: number | null;
+  phuongtien?: string | null;
   thoigian_dukien?: string | null;
   luotthich?: number;
   ngaytao: string | null;

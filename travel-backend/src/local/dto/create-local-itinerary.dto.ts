@@ -17,6 +17,13 @@ export class LocalPlaceItemDto {
   ten: string;
 
   @ApiProperty({
+    description: 'Địa chỉ đầy đủ',
+    example: '1 Công trường Nhân Dân, Phường Bến Nghé, Quận 1, TP.HCM',
+    required: false,
+  })
+  diachi?: string | null;
+
+  @ApiProperty({
     description: 'Vĩ độ (Latitude)',
     example: 10.7726,
     type: Number,
@@ -70,6 +77,15 @@ export class CreateLocalItineraryDto {
   sothich_id?: number | null;
 
   @ApiProperty({
+    description: 'Phương tiện di chuyển chính (driving-traffic, driving, walking, cycling)',
+    enum: ['mapbox/driving-traffic', 'mapbox/driving', 'mapbox/walking', 'mapbox/cycling'],
+    default: 'mapbox/driving-traffic',
+    example: 'mapbox/driving-traffic',
+    required: false,
+  })
+  phuongtien?: string | null;
+
+  @ApiProperty({
     description: 'Danh sách các địa điểm trong lịch trình (theo thứ tự)',
     type: [LocalPlaceItemDto],
     example: [
@@ -119,6 +135,14 @@ export class UpdateLocalItineraryDto {
     required: false,
   })
   sothich_id?: number | null;
+
+  @ApiProperty({
+    description: 'Phương tiện di chuyển chính (driving-traffic, driving, walking, cycling)',
+    enum: ['mapbox/driving-traffic', 'mapbox/driving', 'mapbox/walking', 'mapbox/cycling'],
+    example: 'mapbox/driving',
+    required: false,
+  })
+  phuongtien?: string | null;
 
   @ApiProperty({
     description: 'Danh sách các địa điểm trong lịch trình (thay thế toàn bộ danh sách cũ)',
