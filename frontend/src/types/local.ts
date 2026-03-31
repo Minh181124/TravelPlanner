@@ -8,6 +8,7 @@
 export interface LocalPlaceItem {
   mapboxPlaceId: string; // Mapbox Place ID (google_place_id)
   ten: string; // Tên địa điểm
+  diachi: string; // Địa chỉ đầy đủ (số nhà, tên đường, phường/xã)
   lat: number; // Vĩ độ
   lng: number; // Kinh độ
   ghichu?: string | null; // Mẹo vặt / Ghi chú
@@ -75,6 +76,7 @@ export interface LocalItineraryPlace {
     diadiem_id: number;
     google_place_id: string;
     ten: string;
+    diachi: string | null;
     lat: number | null;
     lng: number | null;
   };

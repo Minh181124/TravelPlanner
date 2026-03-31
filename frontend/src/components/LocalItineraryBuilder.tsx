@@ -1,18 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Loader2, AlertCircle, CheckCircle, Plus } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Loader2, AlertCircle, CheckCircle, Plus, Search, X, Car, Footprints, Bike } from 'lucide-react';
+import { generateUUID } from '@/lib/uuid';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import PlannerMap from './PlannerMap';
 import { PlaceItem } from './PlaceItem';
 import { localItineraryService } from '@/services/localItineraryService';
+import { placesService } from '@/services/placesService';
+import { useRoutePreview } from '@/hooks/useRoutePreview';
 import type { LocalPlaceItem, SoThich, CreateLocalItineraryDto, UpdateLocalItineraryDto } from '@/types/local';
-
-const SearchBox = dynamic(
-  () => import('@mapbox/search-js-react').then((mod) => mod.SearchBox),
-  { ssr: false }
-);
 
 export interface LocalItineraryBuilderProps {
   editId?: number;
@@ -31,6 +28,17 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
   const [sothich_id, setSothicId] = useState<number | undefined>();
   const [places, setPlaces] = useState<LocalPlaceItem[]>([]);
   const [searchSuggestion, setSearchSuggestion] = useState<LocalPlaceItem | null>(null);
+
+  // Search-related state
+  const [sessionToken, setSessionToken] = useState<string>('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchResults, setSearchResults] = useState<LocalPlaceItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Transport mode state
+  const [transportMode, setTransportMode] = useState<'mapbox/driving-traffic' | 'mapbox/driving' | 'mapbox/walking' | 'mapbox/cycling'>('mapbox/driving-traffic');
 
   const [soThichList, setSoThichList] = useState<SoThich[]>([]);
   const [isLoadingSoThich, setIsLoadingSoThich] = useState(true);
@@ -60,6 +68,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
               .map((item: any) => ({
                 mapboxPlaceId: item.diadiem.google_place_id,
                 ten: item.diadiem.ten,
+                diachi: item.diadiem.diachi || 'Không có địa chỉ',
                 lat: item.diadiem.lat || 0,
                 lng: item.diadiem.lng || 0,
                 ghichu: item.ghichu || undefined,
@@ -81,33 +90,68 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
     loadData();
   }, [editId, isEditMode]);
 
-  const handleSearchRetrieve = (res: any) => {
-    if (!res.features || res.features.length === 0) return;
+  // Initialize session token on client-side only (prevents hydration mismatch)
+  useEffect(() => {
+    setSessionToken(generateUUID());
+  }, []);
 
-    const feature = res.features[0];
-    const searchPlace: LocalPlaceItem = {
-      mapboxPlaceId: feature.properties.mapbox_id,
-      ten: feature.properties.name,
-      lat: feature.geometry.coordinates[1],
-      lng: feature.geometry.coordinates[0],
-      ghichu: undefined,
-      thoiluong: 60,
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
+  }, []);
 
-    // Lưu vào suggestion thay vì auto-add
-    setSearchSuggestion(searchPlace);
-  };
+  // Debounced search handler
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
 
-  const handleAddPlaceFromSuggestion = () => {
-    if (!searchSuggestion) return;
+    // Clear previous debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-    if (places.some((p) => p.mapboxPlaceId === searchSuggestion.mapboxPlaceId)) {
+    // If search input is empty, clear results
+    if (!value.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Set debounce timer (300ms)
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const results = await placesService.searchPlaces(value, sessionToken);
+        setSearchResults(results);
+        setShowSearchResults(true);
+      } catch (error) {
+        console.error('Lỗi tìm kiếm:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce delay
+  }, [sessionToken]);
+
+  const handleSelectSearchResult = (place: LocalPlaceItem) => {
+    if (places.some((p) => p.mapboxPlaceId === place.mapboxPlaceId)) {
       alert('Địa điểm này đã có trong lịch trình!');
       return;
     }
 
-    setPlaces([...places, searchSuggestion]);
-    setSearchSuggestion(null); // Clear suggestion sau khi thêm
+    setPlaces([...places, place]);
+    setSearchInput(''); // Clear search input
+    setSearchResults([]); // Clear results
+    setShowSearchResults(false);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchResults([]);
+    setShowSearchResults(false);
   };
 
   const handleGhichuChange = (index: number, ghichu: string) => {
@@ -175,6 +219,23 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
       })),
     [places]
   );
+
+  // Get route info for display
+  const { routeData, isLoading: isLoadingRoute } = useRoutePreview(
+    memoizedGooglePlaceIds,
+    memoizedSelectedPlaces,
+    transportMode
+  );
+
+  // Format route display values
+  const routeDisplay = useMemo(() => {
+    if (!routeData) return null;
+    const distance = routeData.tong_khoangcach ?? 0;
+    const duration = routeData.tong_thoigian ?? 0;
+    const distanceKm = (distance / 1000).toFixed(1);
+    const durationMin = Math.round(duration / 60);
+    return { distance: distanceKm, duration: durationMin };
+  }, [routeData]);
 
   const handleSubmit = async () => {
     if (!tieude.trim()) {
@@ -318,30 +379,65 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Tìm & Thêm Địa Điểm
               </label>
-              <SearchBox
-                accessToken={MAPBOX_TOKEN}
-                onRetrieve={handleSearchRetrieve}
-                placeholder="Tìm địa điểm..."
-              />
-
-              {/* Hiển thị suggestion khi có kết quả tìm kiếm */}
-              {searchSuggestion && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">{searchSuggestion.ten}</p>
-                    <p className="text-xs text-slate-600 mt-1">
-                      Lat: {searchSuggestion.lat.toFixed(4)}, Lng: {searchSuggestion.lng.toFixed(4)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleAddPlaceFromSuggestion}
-                    className="ml-3 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 whitespace-nowrap"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Thêm
-                  </button>
+              
+              {/* Custom Search Input */}
+              <div className="relative">
+                <div className="flex items-center px-4 py-2 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
+                  <Search className="h-4 w-4 text-slate-400 mr-2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm địa điểm... (gõ chữ và chờ kết quả)"
+                    value={searchInput}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="flex-1 px-0 py-0 text-slate-900 placeholder-slate-400 border-0 focus:outline-none"
+                  />
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="ml-2 p-1 hover:bg-slate-100 rounded-md"
+                    >
+                      <X className="h-4 w-4 text-slate-400" />
+                    </button>
+                  )}
                 </div>
-              )}
+
+                {/* Search Results Dropdown */}
+                {showSearchResults && (
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {isSearching ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-5 w-5 text-indigo-600 animate-spin" />
+                        <span className="ml-2 text-sm text-slate-600">Đang tìm kiếm...</span>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <div className="py-2">
+                        {searchResults.map((place, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSearchResult(place)}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-0 focus:outline-none"
+                          >
+                            <p className="text-sm font-medium text-slate-900">{place.ten}</p>
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                              📍 {place.diachi || 'Không có địa chỉ'}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-sm text-slate-500">
+                        Không tìm thấy địa điểm nào
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-2 text-xs text-slate-500">
+                💡 Session token: {sessionToken.substring(0, 8)}... (để gộp API calls)
+              </div>
             </div>
 
             <button
@@ -384,20 +480,86 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
 
       {/* MAP & PLACES - Right Side */}
       <div className="md:col-span-2 h-full flex flex-col overflow-hidden">
+        {/* Transport Mode Selector */}
+        <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 rounded-t-lg">
+          <span className="text-sm font-semibold text-slate-700">Phương tiện:</span>
+          
+          <button
+            onClick={() => setTransportMode('mapbox/driving-traffic')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              transportMode === 'mapbox/driving-traffic'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-900 border border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Car className="h-4 w-4" />
+            <span className="text-sm font-medium">Xe</span>
+          </button>
+
+          <button
+            onClick={() => setTransportMode('mapbox/driving')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              transportMode === 'mapbox/driving'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-900 border border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Car className="h-4 w-4" />
+            <span className="text-sm font-medium">Xe (thường)</span>
+          </button>
+
+          <button
+            onClick={() => setTransportMode('mapbox/walking')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              transportMode === 'mapbox/walking'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-900 border border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Footprints className="h-4 w-4" />
+            <span className="text-sm font-medium">Đi bộ</span>
+          </button>
+
+          <button
+            onClick={() => setTransportMode('mapbox/cycling')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              transportMode === 'mapbox/cycling'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-900 border border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Bike className="h-4 w-4" />
+            <span className="text-sm font-medium">Xe đạp</span>
+          </button>
+        </div>
+
         {/* Map Container - Fixed Height */}
         <div className="h-[500px] rounded-xl border border-slate-200 overflow-hidden shadow-lg flex-shrink-0">
           <PlannerMap
             googlePlaceIds={memoizedGooglePlaceIds}
             places={memoizedPlacesForMap}
             selectedPlaces={memoizedSelectedPlaces}
+            profile={transportMode}
           />
         </div>
 
         {/* Places List - Scrollable */}
         <div className="mt-6 max-h-[calc(100vh-480px)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 flex-1">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3 sticky top-0 bg-slate-50 pb-2">
-            📍 Danh Sách Địa Điểm ({places.length})
-          </h3>
+          <div className="flex items-center justify-between mb-4 sticky top-0 bg-slate-50 pb-3 border-b border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-900">
+              📍 Danh Sách Địa Điểm ({places.length})
+            </h3>
+            
+            {/* Route Info Display */}
+            {places.length >= 2 && routeDisplay && (
+              <div className="flex items-center gap-2 text-xs text-slate-600 px-3 py-1 bg-blue-50 rounded-lg border border-blue-200">
+                {isLoadingRoute && <Loader2 className="h-3 w-3 animate-spin text-indigo-600" />}
+                <span>⏱️ {routeDisplay.duration} phút</span>
+                <span>•</span>
+                <span>📏 {routeDisplay.distance} km</span>
+              </div>
+            )}
+          </div>
 
           {places.length === 0 ? (
             <p className="text-xs text-slate-500">Tìm kiếm và thêm địa điểm bên trái</p>

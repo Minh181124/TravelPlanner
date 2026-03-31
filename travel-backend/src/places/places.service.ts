@@ -2,7 +2,6 @@ import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { diadiem } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class PlacesService {
@@ -19,11 +18,14 @@ export class PlacesService {
 
  /**
    * 1. Tìm kiếm và lưu địa điểm (GPS là tùy chọn)
+   * @param keyword - Từ khóa tìm kiếm
+   * @param sessionToken - Session token từ Frontend để gộp requests thành 1 session Mapbox
+   * @param lat - Vĩ độ (tuỳ chọn)
+   * @param lng - Kinh độ (tuỳ chọn)
    */
-  async searchAndSave(keyword: string, lat?: number, lng?: number) {
+  async searchAndSave(keyword: string, sessionToken: string, lat?: number, lng?: number) {
     const suggestUrl = 'https://api.mapbox.com/search/searchbox/v1/suggest';
     const retrieveUrl = 'https://api.mapbox.com/search/searchbox/v1/retrieve';
-    const sessionToken = uuidv4();
 
     // Khung tọa độ mặc định TP.HCM
     const hcmBbox = '106.35,10.35,107.02,11.16';
@@ -34,7 +36,7 @@ export class PlacesService {
           q: keyword,
           language: 'vi',
           access_token: this.mapboxToken,
-          session_token: sessionToken,
+          session_token: sessionToken, // Sử dụng session_token từ Frontend
           limit: 10,
           country: 'vn',
           types: 'address,poi',
@@ -47,7 +49,7 @@ export class PlacesService {
       });
 
       const suggestions = suggestRes.data.suggestions;
-      const savedPlaces: diadiem[] = [];
+      const savedPlaces: any[] = [];
 
       await Promise.all(
         suggestions.map(async (place: any) => {
@@ -57,20 +59,35 @@ export class PlacesService {
               {
                 params: {
                   access_token: this.mapboxToken,
-                  session_token: sessionToken,
+                  session_token: sessionToken, // Sử dụng cùng session_token
                 },
               },
             );
 
             const feature = detailRes.data.features[0];
             const [pointLng, pointLat] = feature.geometry.coordinates;
+            
+            // Trích xuất thông tin địa chỉ đầy đủ
+            const fullAddress = feature.properties.full_address || 
+                               feature.properties.place_name || 
+                               place.full_address || 
+                               '';
+            
+            // Trích xuất tỉnh/thành phố từ context nếu có
+            let province = '';
+            if (feature.properties.context) {
+              const regionContext = feature.properties.context.find((ctx: any) => ctx.id.includes('region'));
+              if (regionContext) {
+                province = regionContext.text;
+              }
+            }
 
             const placeData = {
-              ten: place.name || 'Không rõ tên',
-              diachi: place.full_address || null,
+              ten: feature.properties.name || place.name || 'Không rõ tên',
+              diachi: fullAddress,
               lat: pointLat,
               lng: pointLng,
-              loai: place.poi_category?.[0] || 'place',
+              loai: place.poi_category?.[0] || feature.properties.poi_category?.[0] || 'place',
               danhgia: null, // Để null theo ý Minh
               soluotdanhgia: null,
               giatien: null,
@@ -86,9 +103,19 @@ export class PlacesService {
               },
             });
 
-            savedPlaces.push(upsertedPlace);
+            // Trả về với thông tin đầy đủ (không chỉ DB record)
+            savedPlaces.push({
+              mapbox_id: place.mapbox_id,
+              google_place_id: upsertedPlace.google_place_id,
+              ten: upsertedPlace.ten,
+              diachi: upsertedPlace.diachi,
+              lat: upsertedPlace.lat,
+              lng: upsertedPlace.lng,
+              province: province,
+              diadiem_id: upsertedPlace.diadiem_id,
+            });
           } catch (err) {
-            this.logger.warn(`Lỗi lấy chi tiết mapbox_id: ${place.mapbox_id}`);
+            this.logger.warn(`Lỗi lấy chi tiết mapbox_id: ${place.mapbox_id}`, err);
           }
         }),
       );

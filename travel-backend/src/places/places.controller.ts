@@ -19,12 +19,12 @@ export class PlacesController {
   @ApiOperation({
     summary: 'Tìm kiếm và lưu địa điểm',
     description:
-      'Sử dụng Mapbox Search Box API để tìm địa điểm, lấy tọa độ chính xác và lưu vào database.',
+      'Sử dụng Mapbox Search Box API để tìm địa điểm, lấy tọa độ chính xác và lưu vào database. Session token được truyền từ Frontend để gộp requests thành 1 session duy nhất.',
   })
   @ApiResponse({ status: 200, description: 'Danh sách địa điểm đã xử lý thành công' })
   @ApiResponse({ status: 502, description: 'Lỗi kết nối Mapbox API' })
   async searchAndSave(@Body() dto: SearchPlaceDto) {
-    return this.placesService.searchAndSave(dto.keyword, dto.lat, dto.lng);
+    return this.placesService.searchAndSave(dto.keyword, dto.session_token, dto.lat, dto.lng);
   }
 
   /**
@@ -41,8 +41,9 @@ export class PlacesController {
   @ApiResponse({ status: 400, description: 'Cần ít nhất 2 địa điểm để tạo lộ trình' })
   @ApiResponse({ status: 502, description: 'Lỗi kết nối Mapbox Directions API' })
   async getRoute(@Body() dto: GetRouteDto) {
-    // Truyền placeIds, profile (phương tiện), và coordinates từ Frontend vào Service
-    return this.placesService.getRoute(dto.placeIds, dto.profile, dto.coordinates);
+    // Truyền placeIds, profile (phương tiện di chuyển), và coordinates từ Frontend vào Service
+    const profile = dto.profile || 'mapbox/driving-traffic';
+    return this.placesService.getRoute(dto.placeIds, profile, dto.coordinates);
   }
 
   /**

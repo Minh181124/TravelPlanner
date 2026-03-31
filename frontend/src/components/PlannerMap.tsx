@@ -104,6 +104,8 @@ export interface PlannerMapProps {
   routeCoordinates?: [number, number][];
   /** Dữ liệu tuyến đường từ Backend: { polyline, tong_khoangcach, tong_thoigian } */
   routeData?: RouteData;
+  /** Phương tiện di chuyển (driving-traffic, driving, walking, cycling) */
+  profile?: string;
   /** Class CSS bổ sung */
   className?: string;
 }
@@ -134,10 +136,11 @@ export default function PlannerMap({
   googlePlaceIds,
   places = [],
   selectedPlaces = [],
+  profile = 'mapbox/driving-traffic',
   className = '',
 }: PlannerMapProps) {
   const { coordinates, routeData, isLoading, error } =
-    useRoutePreview(googlePlaceIds, selectedPlaces);
+    useRoutePreview(googlePlaceIds, selectedPlaces, profile);
 
   // -----------------------------------------------------------------------
   // Tính toán giá trị hiển thị cho badge (vô và giây)

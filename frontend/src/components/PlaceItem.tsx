@@ -31,12 +31,17 @@ export function PlaceItem({
 
       {/* Thông tin Địa Điểm */}
       <div className="flex-1">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500 text-white text-sm font-bold">
             {index + 1}
           </span>
           <h3 className="font-semibold text-slate-900">{place.ten}</h3>
         </div>
+        
+        {/* Địa chỉ */}
+        <p className="text-xs text-slate-500 mb-3 line-clamp-2">
+          📍 {place.diachi || 'Không có địa chỉ'}
+        </p>
 
         {/* Ghi chú / Mẹo vặt */}
         <div className="space-y-3">

@@ -11,6 +11,12 @@ export class SearchPlaceDto {
   keyword: string;
 
   @ApiProperty({
+    description: 'Session token từ Frontend để gộp các lần search thành 1 session Mapbox duy nhất',
+    example: 'a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6',
+  })
+  session_token: string;
+
+  @ApiProperty({
     description: 'Vĩ độ người dùng (Frontend tự động lấy)',
     example: 10.7760,
     required: false,

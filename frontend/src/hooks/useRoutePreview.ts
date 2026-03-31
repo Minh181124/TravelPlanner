@@ -64,7 +64,8 @@ const DEBOUNCE_MS = 500;
 
 export function useRoutePreview(
   googlePlaceIds: string[],
-  selectedPlaces: any[] = []
+  selectedPlaces: any[] = [],
+  profile: string = 'mapbox/driving-traffic'
 ) {
   const [coordinates, setCoordinates] = useState<[number, number][]>([]);
   const [routeData, setRouteData] = useState<RouteData | null>(null);
@@ -74,7 +75,7 @@ export function useRoutePreview(
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchRoute = useCallback(async (ids: string[], places: any[]) => {
+  const fetchRoute = useCallback(async (ids: string[], places: any[], currentProfile: string) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -94,7 +95,8 @@ export function useRoutePreview(
       // Gọi API Backend qua apiClient (baseURL đã cấu hình sẵn)
       const response = await apiClient.post('/places/route', {
         placeIds: ids,
-        coordinates: coords 
+        coordinates: coords,
+        profile: currentProfile // Truyền profile parameter
       }, { signal: controller.signal });
 
       // Validate và chuẩn hóa dữ liệu trước sử dụng
@@ -130,11 +132,11 @@ export function useRoutePreview(
     }
 
     timerRef.current = setTimeout(() => {
-      fetchRoute(googlePlaceIds, selectedPlaces);
+      fetchRoute(googlePlaceIds, selectedPlaces, profile);
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timerRef.current!);
-  }, [googlePlaceIds.join(','), fetchRoute]);
+  }, [googlePlaceIds.join(','), profile, fetchRoute]);
 
   return { coordinates, routeData, isLoading, error };
 }
