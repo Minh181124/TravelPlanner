@@ -67,6 +67,7 @@ model lichtrinh_local {
   mota                    String?
   sothich_id              Int?
   thoigian_dukien         String?                   @db.VarChar(100)
+  phuongtien              String?                   @default("mapbox/driving-traffic") @db.VarChar(50)
   luotthich               Int?                      @default(0)
   ngaytao                 DateTime?                 @default(now()) @db.Timestamp(6)
   nguoidung               nguoidung?                @relation(fields: [nguoidung_id], references: [nguoidung_id], onUpdate: NoAction)

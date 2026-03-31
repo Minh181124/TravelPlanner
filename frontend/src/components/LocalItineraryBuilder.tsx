@@ -60,6 +60,10 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
           setTieude(itinerary.tieude);
           setMota(itinerary.mota || '');
           setSothicId(itinerary.sothich_id || undefined);
+          // Load phương tiện từ database
+          if (itinerary.phuongtien) {
+            setTransportMode(itinerary.phuongtien as any);
+          }
 
           // Chuyển đổi dữ liệu địa điểm từ response sang LocalPlaceItem
           if (itinerary.lichtrinh_local_diadiem && Array.isArray(itinerary.lichtrinh_local_diadiem)) {
@@ -260,6 +264,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
           tieude,
           mota: mota || undefined,
           sothich_id: sothich_id || undefined,
+          phuongtien: transportMode,
           places,
         };
 
@@ -277,6 +282,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
           tieude,
           mota: mota || undefined,
           sothich_id: sothich_id || undefined,
+          phuongtien: transportMode,
           places,
         };
 
@@ -289,6 +295,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
           setTieude('');
           setMota('');
           setSothicId(undefined);
+          setTransportMode('mapbox/driving-traffic');
           setPlaces([]);
           setSubmitStatus('idle');
         }, 2000);
