@@ -75,7 +75,7 @@ export class PlacesService {
             
             // Trích xuất tỉnh/thành phố từ context nếu có
             let province = '';
-            if (feature.properties.context) {
+            if (feature.properties.context && Array.isArray(feature.properties.context)) {
               const regionContext = feature.properties.context.find((ctx: any) => ctx.id.includes('region'));
               if (regionContext) {
                 province = regionContext.text;

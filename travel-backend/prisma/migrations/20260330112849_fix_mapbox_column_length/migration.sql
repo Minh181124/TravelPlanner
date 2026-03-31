@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
 -- CreateTable
 CREATE TABLE "chitiet_diadiem" (
     "chitiet_diadiem_id" SERIAL NOT NULL,

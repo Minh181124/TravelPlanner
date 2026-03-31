@@ -339,7 +339,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
                 value={tieude}
                 onChange={(e) => setTieude(e.target.value)}
                 maxLength={255}
-                className="w-full px-4 py-2 text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
               />
             </div>
 
@@ -352,7 +352,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
                 value={mota}
                 onChange={(e) => setMota(e.target.value)}
                 rows={4}
-                className="w-full px-4 py-2 text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full px-4 py-2 text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 resize-none"
               />
             </div>
 
@@ -364,7 +364,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
                 value={sothich_id || ''}
                 onChange={(e) => setSothicId(e.target.value ? parseInt(e.target.value) : undefined)}
                 disabled={isLoadingSoThich}
-                className="w-full px-4 py-2 text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
+                className="w-full px-4 py-2 text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 disabled:bg-slate-100"
               >
                 <option value="">-- Chọn sở thích --</option>
                 {soThichList.map((st) => (
@@ -382,7 +382,7 @@ export default function LocalItineraryBuilder({ editId }: LocalItineraryBuilderP
               
               {/* Custom Search Input */}
               <div className="relative">
-                <div className="flex items-center px-4 py-2 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
+                <div className="flex items-center px-4 py-2 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 focus-within:border-transparent">
                   <Search className="h-4 w-4 text-slate-400 mr-2" />
                   <input
                     type="text"
